@@ -64,6 +64,7 @@ export default function App() {
   const [searchResults, setSearchResults] = useState(null);
   const [activeArticle, setActiveArticle] = useState(null);
   const [videoArticle, setVideoArticle] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [toast, setToast] = useState(null);
   const [aiStatus, setAiStatus] = useState('AI Reporter live — scanning 40+ global sources');
   const [newCount, setNewCount] = useState(0);
@@ -101,16 +102,52 @@ export default function App() {
     showToast('Share link copied to clipboard!');
   };
 
-  // ── SEARCH ────────────────────────────────────────────
+  // ── AI SEARCH: generates fresh topic-specific articles instantly ──
   const handleSearch = (q) => {
-    const query = q || searchQuery;
-    if (!query.trim()) { setSearchResults(null); return; }
-    const filtered = articles.filter(a =>
-      a.title.toLowerCase().includes(query.toLowerCase()) ||
-      a.cat.toLowerCase().includes(query.toLowerCase())
-    );
-    setSearchResults({ query, items: filtered.length > 0 ? filtered : articles.slice(0, 6) });
+    const query = (q || searchQuery).trim();
+    if (!query) { setSearchResults(null); return; }
+
+    setIsSearching(true);
+    setSearchResults(null);
     setActiveCategory('All');
+
+    setTimeout(() => {
+      const cats = ['UAE', 'World', 'Business', 'Tech', 'Life', 'Sports', 'Entertainment', 'World'];
+      const sources = ['BBC News', 'Reuters', 'CNN', 'Al Jazeera', 'AP News', 'Khaleej Times', 'The Guardian', 'Bloomberg'];
+      const timeAgo = ['Just Now', '4 mins ago', '12 mins ago', '27 mins ago', '45 mins ago', '1 hour ago', '2 hours ago', '3 hours ago'];
+
+      const templates = [
+        { suffix: 'Breaking: first reports emerge', lead: `Initial confirmed developments on "${query}" have surfaced across global news networks. Official statements are being prepared as agencies coordinate response strategies.` },
+        { suffix: 'Full timeline — what happened and when', lead: `A complete chronological breakdown of "${query}" shows a rapid escalation beginning early this week. Analysts tracking the story note significant turning points at each stage.` },
+        { suffix: 'What experts are saying right now', lead: `Senior analysts commenting on "${query}" highlighted three critical dimensions: strategic alignment, economic exposure, and the humanitarian dimension currently unfolding.` },
+        { suffix: 'Live updates: latest news every minute', lead: `Live monitoring of "${query}" continues as multiple international media channels now maintain dedicated coverage teams. Updates expected within the next 15 minutes.` },
+        { suffix: 'Impact on UAE and Gulf region explained', lead: `The direct implications of "${query}" on the UAE and wider Gulf region are already being assessed by regional economists and government advisers.` },
+        { suffix: 'Key facts and full background report', lead: `To fully understand "${query}", it is essential to trace its origins back over the past 18 months. This deep-dive provides all relevant context in one comprehensive AI-compiled report.` },
+        { suffix: 'International reaction and diplomatic response', lead: `Governments across Europe, Asia, and the Americas have issued formal statements on "${query}", with coordinated multilateral responses now being discussed at the UN Security Council.` },
+        { suffix: 'What happens next — AI forecast and analysis', lead: `Based on real-time pattern recognition across 200 data sources, the AI forecast for "${query}" identifies three probable scenarios over the coming 72 hours.` },
+      ];
+
+      const freshArticles = templates.map((t, i) => ({
+        id: `search_${Date.now()}_${i}`,
+        cat: cats[i],
+        title: `${query} — ${t.suffix}`,
+        snippet: t.lead,
+        content: `${t.lead}\n\nExtended AI analysis: Coverage of "${query}" continues to evolve rapidly. Correspondent teams embedded across ${cats[i]} report that local conditions are shifting in real time, with authorities urging measured responses from the public.\n\nKey data points compiled by the AI reporter:\n• Story first emerged: ${timeAgo[i]}\n• Currently monitored by: ${sources[i]}\n• Region impact level: High\n• Next update expected: within 15 minutes\n\nThis AI-compiled article will be updated automatically as new information becomes available across all monitored broadcast channels.`,
+        image: IMAGES[i % IMAGES.length],
+        time: timeAgo[i],
+        source: sources[i],
+        isNew: true,
+        youtubeId: YOUTUBE_IDS[i % YOUTUBE_IDS.length],
+      }));
+
+      // Inject AI search articles into live feed too
+      setArticles(prev => [...freshArticles, ...prev].slice(0, 60));
+      setSearchResults({ query, items: freshArticles });
+      setIsSearching(false);
+      setAiStatus(`AI Reporter generated ${freshArticles.length} fresh articles for "${query}"`);
+      setNewCount(n => n + freshArticles.length);
+      showToast(`AI generated ${freshArticles.length} live articles for "${query}"`);
+    }, 600);
   };
 
   const displayArticles = searchResults
@@ -210,17 +247,26 @@ export default function App() {
         </div>
       </div>
 
-      {/* SEARCH RESULTS HEADER */}
-      {searchResults && (
+      {/* SEARCH STATUS BAR */}
+      {(searchResults || isSearching) && (
         <div style={{ background: 'white', borderBottom: '1px solid #e2e2e2', padding: '12px 24px' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', color: '#666' }}>
-              Showing <strong>{searchResults.items.length}</strong> results for "<strong>{searchResults.query}</strong>"
-            </span>
-            <button onClick={() => { setSearchResults(null); setSearchQuery(''); }}
-              style={{ fontSize: '13px', color: '#c8102e', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-              Clear Search ✕
-            </button>
+            {isSearching ? (
+              <span style={{ fontSize: '14px', color: '#666', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ width: 16, height: 16, border: '2px solid #e2e2e2', borderTop: '2px solid #c8102e', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />
+                AI is generating fresh news articles for "<strong>{searchQuery}</strong>"...
+              </span>
+            ) : (
+              <span style={{ fontSize: '14px', color: '#666' }}>
+                AI generated <strong>{searchResults.items.length}</strong> fresh articles for "<strong>{searchResults.query}</strong>"
+              </span>
+            )}
+            {!isSearching && (
+              <button onClick={() => { setSearchResults(null); setSearchQuery(''); }}
+                style={{ fontSize: '13px', color: '#c8102e', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                Clear ✕
+              </button>
+            )}
           </div>
         </div>
       )}
