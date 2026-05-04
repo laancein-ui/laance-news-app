@@ -1,474 +1,383 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Video, 
-  Compass, 
-  Play, 
-  X, 
-  CheckCircle, 
-  AlertCircle, 
-  Sparkles,
-  Search,
-  User,
-  Shield,
-  Activity,
-  Terminal,
-  Languages,
-  Share2,
-  Clock,
-  ExternalLink,
-  Globe,
-  BookOpen
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Play, Share2, X, CheckCircle, RefreshCw, Zap } from 'lucide-react';
 
-const sharedNewsCloud = {};
+const CATEGORIES = ['UAE', 'World', 'Business', 'Tech', 'Life', 'Sports', 'Entertainment'];
 
-const supportedCountries = [
-  "Global", "United States", "United Kingdom", "Canada", "France", "Germany", 
-  "Spain", "Japan", "India", "Australia", "Brazil", "South Africa", "United Arab Emirates"
+const IMAGES = [
+  "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1677442136019-21780efad01a?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1496065187959-7f07b8353c55?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80",
 ];
 
-const supportedLanguages = [
-  "English", "Spanish", "French", "German", "Japanese", "Hindi", "Portuguese", "Arabic"
+const AI_HEADLINES = [
+  { cat: 'UAE', title: 'UAE intercepts cruise missiles over territorial waters as tensions escalate with Iran', snippet: 'UAE air defence systems successfully neutralised multiple threats, the government confirmed late Sunday, urging residents to remain calm.' },
+  { cat: 'World', title: 'Global ceasefire talks enter Day 27: US, Israel and Iran negotiators meet in Geneva', snippet: 'Senior diplomats from all three nations arrived for critical talks expected to reshape the regional security architecture for decades.' },
+  { cat: 'Business', title: 'UAE economy surges 6.2% as non-oil sectors lead recovery in Q1 2026', snippet: 'Tourism, fintech and advanced manufacturing drove the fastest quarterly growth since 2014, the Ministry of Economy announced today.' },
+  { cat: 'Tech', title: 'Five technology trends that will define 2026 — and the cities bold enough to build them', snippet: 'AI integration, quantum computing access, autonomous transport, green data centres, and spatial computing top the list for 2026.' },
+  { cat: 'UAE', title: 'UAE schools revert to distance learning until May 8 after renewed Iranian attacks', snippet: 'The Ministry of Education issued the directive following the Ministry of Interior\'s advice to limit public movement during elevated alert.' },
+  { cat: 'Business', title: 'Gold prices in UAE steady after slight dip amid ceasefire optimism in Gulf markets', snippet: 'Dubai gold souk traders reported stable volumes as investors await confirmation of formal negotiations between regional stakeholders.' },
+  { cat: 'Life', title: 'WhatsApp in UAE: Banking ban, private chat rules and new web calling feature explained', snippet: 'Regulators issued updated guidelines clarifying the scope of digital communication laws and VoIP access within the Emirates.' },
+  { cat: 'Sports', title: 'UAE national football squad qualifies for Asia Cup semi-finals after dramatic win', snippet: 'A late goal secured a 2-1 victory over South Korea, sending thousands of fans into celebration across Dubai and Abu Dhabi.' },
+  { cat: 'World', title: 'Iran Guards warn of "impossible" military options as nuclear talks resume in Vienna', snippet: 'The IRGC issued a blunt warning to Western powers while diplomatic channels remained open for a seventh round of indirect talks.' },
+  { cat: 'Tech', title: 'AI startup from Abu Dhabi raises $400M to build autonomous newsroom technology', snippet: 'Laance Intelligence secured Series C funding to expand its AI-driven media operations across 14 languages and 60 countries.' },
+  { cat: 'UAE', title: 'Abu Dhabi deploys AI system to predict road accidents and control ambulance signals', snippet: 'The smart transport initiative will reduce emergency response times by 40%, according to the Abu Dhabi Department of Transport.' },
+  { cat: 'Entertainment', title: 'Coldplay announces two additional Dubai shows after 90,000-ticket sellout in 4 hours', snippet: 'The British rock band will perform at the Expo City Arena on June 28 and 29, with tickets available via Platinumlist from Monday.' },
 ];
 
-// YouTube video IDs mapped to topic keywords for real video playback
-const topicVideoMap = {
-  default: "dQw4w9WgXcQ",
-  war: "phClqoalTu0",
-  iran: "phClqoalTu0",
-  israel: "phClqoalTu0",
-  tech: "ZlNFpri-Y40",
-  ai: "ZlNFpri-Y40",
-  space: "OnoNITE-CLc",
-  economy: "bWmSFCl__T8",
-  climate: "G4H1N_yXBiA",
-  health: "5MgBikgcWnY",
-};
+const YOUTUBE_IDS = ['ZlNFpri-Y40', 'phClqoalTu0', 'OnoNITE-CLc', 'bWmSFCl__T8'];
 
-function getYoutubeId(query) {
-  const q = query.toLowerCase();
-  for (const key of Object.keys(topicVideoMap)) {
-    if (q.includes(key)) return topicVideoMap[key];
-  }
-  return topicVideoMap.default;
-}
-
-// Generate realistic Google-style news results
-function generateGoogleResults(query, country, language) {
-  const sources = [
-    { name: "BBC News", url: "bbc.com", favicon: "🔴" },
-    { name: "Reuters", url: "reuters.com", favicon: "🟠" },
-    { name: "CNN", url: "cnn.com", favicon: "🔵" },
-    { name: "Al Jazeera", url: "aljazeera.com", favicon: "🟡" },
-    { name: "The Guardian", url: "theguardian.com", favicon: "🟣" },
-    { name: "AP News", url: "apnews.com", favicon: "⚫" },
-    { name: "Khaleej Times", url: "khaleejtimes.com", favicon: "🟢" },
-  ];
-
-  const timeAgo = ["2 mins ago", "14 mins ago", "38 mins ago", "1 hour ago", "2 hours ago", "4 hours ago", "6 hours ago"];
-  const images = [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1677442136019-21780efad01a?w=400&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1496065187959-7f07b8353c55?w=400&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=400&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=400&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?w=400&auto=format&fit=crop&q=80",
-  ];
-
-  const headlines = [
-    `${query}: Breaking developments as world leaders respond immediately`,
-    `LIVE UPDATES: ${query} — Full timeline of events from first to latest`,
-    `What you need to know about ${query} right now — Full Report`,
-    `Analysts weigh in: The long-term impact of ${query} on global markets`,
-    `${query}: Local communities and residents share their response`,
-    `Key facts and complete background: Understanding ${query} fully`,
-    `VIDEO: Complete news broadcast on ${query} — All major updates`,
-  ];
-
-  const snippets = [
-    `Officials confirmed significant progress in discussions surrounding ${query}. All major nations have responded with coordinated measures targeting long-term stabilization across affected regions.`,
-    `Continuous coverage of ${query} indicates shifting dynamics between key stakeholders. Experts assess the situation in real-time, tracking every development as it unfolds across the ${country} region.`,
-    `Comprehensive review of ${query} shows cascading secondary effects on finance, health, and trade channels. Policy teams are aligned on immediate action across the ${country} corridors.`,
-    `In-depth analysis reveals ${query} will have lasting implications on regional governance and coordination. Watch the full ${language}-language broadcast below for complete coverage.`,
-    `Affected communities across ${country} provide testimony on how ${query} is shaping daily life. Support networks deployed immediately as conditions on the ground evolve rapidly.`,
-    `Data-driven deep-dive on ${query} maps out the key turning points from initial outbreak to resolution. Full report available exclusively on ${language} news streaming channels.`,
-    `Breaking: Official response channels confirm details on ${query}. Press conference scheduled within the next 24 hours — Live streams available.`,
-  ];
-
-  return sources.map((src, i) => ({
-    id: `result_${i}_${Date.now()}`,
-    title: headlines[i],
-    snippet: snippets[i],
-    source: src.name,
-    favicon: src.favicon,
-    url: `https://www.${src.url}/search?q=${encodeURIComponent(query)}`,
-    timeAgo: timeAgo[i],
-    image: images[i],
-    youtubeId: getYoutubeId(query),
-    country,
-    language,
-    fullContent: `${snippets[i]}\n\nExtended analysis of ${query}: As the situation develops in ${country}, cross-border agencies are actively coordinating response strategies. Primary stakeholders have confirmed new measures will be enacted within 48 hours. Regional administrators from key cities confirm alignment. All major broadcasters are providing dedicated ${language}-language news coverage.\n\nKey points:\n• First developments were recorded ${timeAgo[i]}\n• ${country} officials are actively monitoring the situation\n• Translated reports are now live across ${language} media\n• Economic and social impact assessments are ongoing\n• International aid channels are now open and accepting requests`
-  }));
-}
-
-function App() {
-  const [currentTab, setCurrentTab] = useState('ai-search');
-  const [user, setUser] = useState({
-    name: "Alex Johnson",
-    email: "alex.johnson@gmail.com",
-    country: "Global",
-    language: "English",
-    isLoggedIn: true
-  });
-  const [authEmail, setAuthEmail] = useState('');
-  const [authName, setAuthName] = useState('');
-
-  const [aiSearchQuery, setAiSearchQuery] = useState('');
-  const [isAiSearching, setIsAiSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const [activeArticle, setActiveArticle] = useState(null);
-  const [videoModalArticle, setVideoModalArticle] = useState(null);
-  const [toastMessage, setToastMessage] = useState(null);
-
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+function makeArticle(src, idx, isNew = false) {
+  return {
+    id: `${Date.now()}_${idx}`,
+    cat: src.cat,
+    title: src.title,
+    snippet: src.snippet,
+    content: `${src.snippet}\n\nFull AI-generated report: In-depth analysis of "${src.title}" reveals cascading regional and international implications. Senior officials confirmed the development during a press briefing, stressing that systematic policy responses are already underway.\n\nExperts tracking the story note a significant shift from previous positions, with both domestic and international stakeholders recalibrating strategies in real time. Data from the latest situational reports indicate accelerated timelines across all affected sectors.\n\nMore updates will be published as this AI-monitored situation develops.`,
+    image: IMAGES[idx % IMAGES.length],
+    time: 'Just Now',
+    isNew,
+    youtubeId: YOUTUBE_IDS[idx % YOUTUBE_IDS.length],
   };
+}
 
-  // Check share links from URL
+const INITIAL_ARTICLES = AI_HEADLINES.map((h, i) => makeArticle(h, i, false));
+
+const TICKER_ITEMS = [
+  'UAE on high alert after Iranian missile attack — schools switch to distance learning',
+  'Gold: AED 310.50/g | Forex: 1 USD = 3.6725 AED',
+  'Ceasefire Day 27: Live updates from Geneva talks',
+  'UAE economy grows 6.2% in Q1 2026 — non-oil sectors lead',
+  'Abu Dhabi AI system predicts road accidents in real time',
+  'Coldplay adds 2 Dubai shows after instant sellout',
+  'Iran nuclear talks resume — IRGC issues new warning',
+];
+
+export default function App() {
+  const [articles, setArticles] = useState(INITIAL_ARTICLES);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [activeArticle, setActiveArticle] = useState(null);
+  const [videoArticle, setVideoArticle] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [aiStatus, setAiStatus] = useState('AI Reporter live — scanning 40+ global sources');
+  const [newCount, setNewCount] = useState(0);
+  const counterRef = useRef(0);
+  const sharedRef = useRef({});
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  // ── AI AUTO-ADD NEWS EVERY 30s ────────────────────────
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const shareId = params.get('share');
-    if (shareId && sharedNewsCloud[shareId]) {
-      setActiveArticle(sharedNewsCloud[shareId]);
-    }
+    const interval = setInterval(() => {
+      counterRef.current += 1;
+      const src = AI_HEADLINES[counterRef.current % AI_HEADLINES.length];
+      const freshArticle = makeArticle(
+        { ...src, title: src.title + ' — AI Update #' + counterRef.current },
+        counterRef.current,
+        true
+      );
+      setArticles(prev => [freshArticle, ...prev.slice(0, 49)]);
+      setNewCount(n => n + 1);
+      setAiStatus(`AI Reporter published update #${counterRef.current} — ${new Date().toLocaleTimeString()}`);
+      setTimeout(() => {
+        setArticles(prev => prev.map(a => a.id === freshArticle.id ? { ...a, isNew: false } : a));
+      }, 3000);
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  // INSTANT GOOGLE-STYLE NEWS SEARCH
-  const handleSearch = () => {
-    if (!aiSearchQuery.trim()) return;
-    setIsAiSearching(true);
-    setSearchResults([]);
-    setActiveArticle(null);
-
-    setTimeout(() => {
-      const results = generateGoogleResults(aiSearchQuery, user.country, user.language);
-      setSearchResults(results);
-      setIsAiSearching(false);
-      showToast(`Found ${results.length} results for "${aiSearchQuery}"`);
-    }, 500);
+  // ── SHARE LINK ────────────────────────────────────────
+  const handleShare = (article, e) => {
+    if (e) e.stopPropagation();
+    sharedRef.current[article.id] = article;
+    const link = `${window.location.origin}?share=${article.id}`;
+    navigator.clipboard.writeText(link).catch(() => {});
+    showToast('Share link copied to clipboard!');
   };
 
-  const handleShare = (article) => {
-    sharedNewsCloud[article.id] = article;
-    const link = `${window.location.origin}${window.location.pathname}?share=${article.id}`;
-    navigator.clipboard.writeText(link);
-    showToast("Share link copied to clipboard!");
+  // ── SEARCH ────────────────────────────────────────────
+  const handleSearch = (q) => {
+    const query = q || searchQuery;
+    if (!query.trim()) { setSearchResults(null); return; }
+    const filtered = articles.filter(a =>
+      a.title.toLowerCase().includes(query.toLowerCase()) ||
+      a.cat.toLowerCase().includes(query.toLowerCase())
+    );
+    setSearchResults({ query, items: filtered.length > 0 ? filtered : articles.slice(0, 6) });
+    setActiveCategory('All');
   };
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (!authEmail || !authName) return;
-    setUser({ ...user, name: authName, email: authEmail, isLoggedIn: true });
-    showToast(`Logged in as ${authName}!`);
-  };
+  const displayArticles = searchResults
+    ? searchResults.items
+    : activeCategory === 'All'
+      ? articles
+      : articles.filter(a => a.cat === activeCategory);
+
+  const heroArticle = displayArticles[0];
+  const sideArticles = displayArticles.slice(1, 5);
+  const gridArticles = displayArticles.slice(5);
 
   return (
-    <div className="app-container">
-      {toastMessage && (
-        <div className="toast-success">
-          <CheckCircle className="toast-icon" size={20} />
-          <span>{toastMessage}</span>
+    <div style={{ background: '#f4f4f4', minHeight: '100vh' }}>
+      {toast && (
+        <div className="kt-toast">
+          <CheckCircle size={16} color="#22c55e" />
+          {toast}
         </div>
       )}
 
-      {/* Header */}
-      <header className="main-header">
-        <div className="brand-wrapper" onClick={() => { setCurrentTab('ai-search'); setSearchResults([]); setActiveArticle(null); }}>
-          <div className="brand-logo">
-            <Sparkles size={24} color="#3b82f6" />
-            <span>LAANCE NEWS</span>
+      {/* TOP BAR */}
+      <div className="kt-topbar">
+        <div className="kt-topbar-left">
+          <span>Mon, May 4, 2026 | Dhu al-Qadah 16, 1447</span>
+          <span className="kt-live-badge">● LIVE</span>
+          <span>DXB 31°C</span>
+        </div>
+        <div className="kt-topbar-right">
+          <span>Gold: AED 310.50/g</span>
+          <span>USD: 3.6725</span>
+          <span>Sign In</span>
+        </div>
+      </div>
+
+      {/* HEADER */}
+      <div className="kt-header">
+        <div className="kt-header-inner">
+          <div className="kt-brand" onClick={() => { setSearchResults(null); setActiveCategory('All'); }}>
+            <div className="kt-brand-name">LAANCE NEWS</div>
+            <div className="kt-brand-tagline">Voice of the World · AI-Powered · Since 2026</div>
+          </div>
+          <div className="kt-search-bar">
+            <input
+              className="kt-search-input"
+              placeholder="Search news..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            />
+            <button className="kt-search-btn" onClick={() => handleSearch()}>
+              <Search size={16} /> Search
+            </button>
           </div>
         </div>
-        <nav className="nav-links">
-          <button className={`nav-item ${currentTab === 'ai-search' ? 'active' : ''}`} onClick={() => setCurrentTab('ai-search')}>
-            <Terminal size={18} /><span>News Search</span>
-          </button>
-          <button className={`nav-item ${currentTab === 'profile' ? 'active' : ''}`} onClick={() => setCurrentTab('profile')}>
-            <User size={18} /><span>Preferences</span>
-          </button>
-        </nav>
-      </header>
+      </div>
 
-      <main className="main-content">
+      {/* NAVIGATION */}
+      <div className="kt-nav">
+        <div className="kt-nav-inner">
+          {['All', ...CATEGORIES].map(cat => (
+            <button
+              key={cat}
+              className={`kt-nav-item ${activeCategory === cat && !searchResults ? 'active' : ''}`}
+              onClick={() => { setActiveCategory(cat); setSearchResults(null); setSearchQuery(''); }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        {/* AI SEARCH TAB */}
-        {currentTab === 'ai-search' && (
-          <div>
-            {/* Search box — always visible */}
-            <div style={{ marginBottom: '32px' }}>
-              <div style={{ display: 'flex', gap: '0', borderRadius: '14px', overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}>
-                <input
-                  type="text"
-                  value={aiSearchQuery}
-                  onChange={e => setAiSearchQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="Search any news topic globally (e.g. Iran Israel war, AI breakthroughs, climate summit...)"
-                  style={{ flex: 1, padding: '18px 24px', background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: '16px', fontFamily: 'inherit' }}
-                />
-                <button className="btn-primary" onClick={handleSearch} disabled={isAiSearching} style={{ borderRadius: '0 12px 12px 0', padding: '18px 32px', fontSize: '15px' }}>
-                  <Search size={20} />
-                  <span>{isAiSearching ? 'Searching...' : 'Search'}</span>
-                </button>
-              </div>
-              {searchResults.length > 0 && (
-                <p style={{ fontSize: '13px', color: 'var(--text-dimmed)', marginTop: '10px', paddingLeft: '4px' }}>
-                  About {searchResults.length} results for "<strong style={{ color: 'var(--text-muted)' }}>{aiSearchQuery}</strong>" — {user.language} · {user.country}
-                </p>
+      {/* BREAKING TICKER */}
+      <div className="kt-ticker">
+        <div className="kt-ticker-label">Breaking</div>
+        <div style={{ overflow: 'hidden', flex: 1 }}>
+          <div className="kt-ticker-track">
+            {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+              <span key={i} className="kt-ticker-item">{item}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* AI STATUS BAR */}
+      <div className="kt-ai-bar">
+        <div className="kt-ai-bar-inner">
+          <div className="ai-dot" />
+          <Zap size={13} color="#22c55e" />
+          <span style={{ color: '#22c55e', fontWeight: 600 }}>AI AUTO-REPORTER:</span>
+          <span style={{ color: '#94a3b8' }}>{aiStatus}</span>
+          {newCount > 0 && (
+            <span style={{ marginLeft: 'auto', background: '#c8102e', color: 'white', padding: '2px 10px', borderRadius: '2px', fontSize: '11px', fontWeight: 700 }}>
+              +{newCount} NEW
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* SEARCH RESULTS HEADER */}
+      {searchResults && (
+        <div style={{ background: 'white', borderBottom: '1px solid #e2e2e2', padding: '12px 24px' }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', color: '#666' }}>
+              Showing <strong>{searchResults.items.length}</strong> results for "<strong>{searchResults.query}</strong>"
+            </span>
+            <button onClick={() => { setSearchResults(null); setSearchQuery(''); }}
+              style={{ fontSize: '13px', color: '#c8102e', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+              Clear Search ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MAIN CONTENT */}
+      <div className="kt-main">
+        {displayArticles.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: '#999' }}>
+            <RefreshCw size={48} style={{ margin: '0 auto 16px', display: 'block' }} />
+            <p>AI Reporter is generating fresh content...</p>
+          </div>
+        ) : (
+          <>
+            {/* HERO GRID */}
+            <div className="kt-hero-grid" style={{ marginBottom: 24 }}>
+              {/* Main hero */}
+              {heroArticle && (
+                <div className="kt-hero-main" onClick={() => setActiveArticle(heroArticle)}>
+                  <img src={heroArticle.image} alt={heroArticle.title} />
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#c8102e', marginBottom: 8 }}>
+                    {heroArticle.cat} <span className="kt-ai-badge" style={{ marginLeft: 6 }}>AI</span>
+                  </div>
+                  <div style={{ fontFamily: "'Merriweather', serif", fontSize: 22, fontWeight: 900, lineHeight: 1.3, color: '#1a1a1a', marginBottom: 12 }}>
+                    {heroArticle.title}
+                  </div>
+                  <div style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>{heroArticle.snippet}</div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                    <button className="kt-video-btn" onClick={e => { e.stopPropagation(); setVideoArticle(heroArticle); }}>
+                      <Play size={14} fill="white" /> Watch Video
+                    </button>
+                    <button className="kt-share-btn" onClick={e => handleShare(heroArticle, e)}>
+                      <Share2 size={14} /> Share
+                    </button>
+                  </div>
+                </div>
               )}
-            </div>
 
-            {/* Loading spinner */}
-            {isAiSearching && (
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '20px 0' }}>
-                <div className="spinner" style={{ width: '24px', height: '24px', borderWidth: '2px' }}></div>
-                <span style={{ color: 'var(--text-muted)' }}>Scanning Google, BBC, Reuters, CNN, Al Jazeera, AP News, Khaleej Times...</span>
-              </div>
-            )}
-
-            {/* HERO: show landing banner only when no results */}
-            {!isAiSearching && searchResults.length === 0 && (
-              <div className="hero-banner glass-panel">
-                <span className="hero-tag">Google-Style AI News Intelligence</span>
-                <h1 className="hero-title">Search Any Topic — Get Full News Results Instantly</h1>
-                <p className="hero-subtitle">AI automatically scrapes Google, BBC, Reuters, CNN, Al Jazeera and more. Full details, images, and AI video broadcasts in your language ({user.language}).</p>
-              </div>
-            )}
-
-            {/* GOOGLE-STYLE SEARCH RESULTS */}
-            {!isAiSearching && searchResults.length > 0 && !activeArticle && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                {searchResults.map((result, idx) => (
-                  <div
-                    key={result.id}
-                    style={{
-                      display: 'flex',
-                      gap: '20px',
-                      padding: '20px 0',
-                      borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    onClick={() => setActiveArticle(result)}
-                  >
-                    {/* Image thumbnail */}
-                    <div style={{ flexShrink: 0 }}>
-                      <img
-                        src={result.image}
-                        alt={result.title}
-                        style={{ width: '140px', height: '95px', objectFit: 'cover', borderRadius: '10px', display: 'block' }}
-                      />
-                    </div>
-
-                    {/* Text content */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {/* Source + time */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-dimmed)' }}>
-                        <span>{result.favicon}</span>
-                        <span style={{ color: '#4ade80', fontWeight: '600' }}>{result.source}</span>
-                        <span>·</span>
-                        <Clock size={12} />
-                        <span>{result.timeAgo}</span>
+              {/* Side articles */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: '#e2e2e2' }}>
+                {sideArticles.map(a => (
+                  <div key={a.id} className={`kt-hero-side ${a.isNew ? 'new-article' : ''}`} onClick={() => setActiveArticle(a)}>
+                    <img src={a.image} alt={a.title} style={{ width: 90, height: 70, objectFit: 'cover', flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#c8102e', letterSpacing: 1, marginBottom: 4 }}>
+                        {a.cat} {a.isNew && <span className="kt-ai-badge" style={{ marginLeft: 4 }}>NEW</span>}
                       </div>
-
-                      {/* Headline */}
-                      <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-main)', lineHeight: '1.3', margin: 0 }}>
-                        {result.title}
-                      </h3>
-
-                      {/* Snippet */}
-                      <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {result.snippet}
-                      </p>
-
-                      {/* Action buttons */}
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-                        <button
-                          className="btn-primary"
-                          style={{ padding: '6px 14px', fontSize: '12.5px' }}
-                          onClick={e => { e.stopPropagation(); setVideoModalArticle(result); }}
-                        >
-                          <Play size={13} fill="white" />
-                          <span>Watch AI Video</span>
-                        </button>
-                        <button
-                          className="btn-glass"
-                          style={{ padding: '6px 14px', fontSize: '12.5px' }}
-                          onClick={e => { e.stopPropagation(); handleShare(result); }}
-                        >
-                          <Share2 size={13} />
-                          <span>Share</span>
-                        </button>
-                        <a
-                          href={result.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '12.5px', color: 'var(--text-muted)', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', textDecoration: 'none', transition: 'all 0.2s' }}
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <ExternalLink size={13} />
-                          <span>Source</span>
-                        </a>
-                      </div>
+                      <div style={{ fontFamily: "'Merriweather', serif", fontSize: 13.5, fontWeight: 700, lineHeight: 1.4, color: '#1a1a1a' }}>{a.title}</div>
+                      <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>{a.time}</div>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
 
-            {/* FULL ARTICLE DETAIL VIEW (like clicking a Google result) */}
-            {activeArticle && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <button className="btn-glass" style={{ alignSelf: 'flex-start', padding: '8px 16px', fontSize: '13.5px' }} onClick={() => setActiveArticle(null)}>
-                  ← Back to results
-                </button>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-dimmed)' }}>
-                  <span>{activeArticle.favicon}</span>
-                  <span style={{ color: '#4ade80', fontWeight: '700' }}>{activeArticle.source}</span>
-                  <span>·</span>
-                  <Clock size={13} />
-                  <span>{activeArticle.timeAgo}</span>
-                  <span>·</span>
-                  <Globe size={13} />
-                  <span>{activeArticle.country} ({activeArticle.language})</span>
-                </div>
-
-                <h1 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1.2', margin: 0 }}>{activeArticle.title}</h1>
-
-                <img src={activeArticle.image} alt={activeArticle.title} style={{ width: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '16px' }} />
-
-                <div style={{ fontSize: '16.5px', lineHeight: '1.75', color: 'var(--text-muted)', whiteSpace: 'pre-wrap' }}>
-                  {activeArticle.fullContent}
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
-                  <button className="btn-primary" onClick={() => setVideoModalArticle(activeArticle)}>
-                    <Play size={16} fill="white" />
-                    <span>Watch AI Video Broadcast</span>
-                  </button>
-                  <button className="btn-glass" onClick={() => handleShare(activeArticle)}>
-                    <Share2 size={16} />
-                    <span>Share Link</span>
-                  </button>
-                  <button className="btn-glass" onClick={() => setActiveArticle(null)}>
-                    ← Back to Results
-                  </button>
-                </div>
+              {/* Sidebar */}
+              <div className="kt-sidebar">
+                <div className="kt-section-title" style={{ fontSize: 14 }}>AI Latest Updates</div>
+                {articles.slice(0, 8).map(a => (
+                  <div key={a.id}
+                    style={{ padding: '10px 0', borderBottom: '1px solid #e2e2e2', cursor: 'pointer' }}
+                    onClick={() => setActiveArticle(a)}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#c8102e', textTransform: 'uppercase', letterSpacing: 1 }}>{a.cat}</div>
+                    <div style={{ fontFamily: "'Merriweather', serif", fontSize: 13, fontWeight: 700, lineHeight: 1.35, color: '#1a1a1a', marginTop: 3 }}>{a.title}</div>
+                    <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>{a.time}</div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-        )}
+            </div>
 
-        {/* PROFILE TAB */}
-        {currentTab === 'profile' && (
+            {/* NEWS GRID */}
+            <div className="kt-section-title">
+              More Stories <span onClick={() => setActiveCategory('All')}>View All →</span>
+            </div>
+            <div className="kt-news-grid">
+              {gridArticles.map(a => (
+                <div key={a.id} className={`kt-card ${a.isNew ? 'new-article' : ''}`} onClick={() => setActiveArticle(a)}>
+                  <img src={a.image} alt={a.title} />
+                  <div className="kt-card-body">
+                    <div className="kt-card-cat">
+                      {a.cat} {a.isNew && <span className="kt-ai-badge" style={{ marginLeft: 6 }}>NEW</span>}
+                    </div>
+                    <div className="kt-card-title">{a.title}</div>
+                    <div className="kt-card-snippet">{a.snippet}</div>
+                    <div className="kt-card-meta">
+                      <span>{a.time}</span>
+                      <span className="kt-ai-badge">AI Reporter</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* FOOTER */}
+      <div style={{ background: '#1a1a1a', color: '#999', padding: '32px 24px', fontSize: 13 }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <div className="hero-banner glass-panel">
-              <span className="hero-tag">Account Settings</span>
-              <h1 className="hero-title">Preferences & Language Settings</h1>
-              <p className="hero-subtitle">Set your name, Gmail, preferred country, and broadcast language.</p>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '32px' }}>
-              <div className="glass-panel" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <User size={18} color="#3b82f6" /> User Profile
-                </h3>
-                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Display Name</label>
-                    <input type="text" className="form-input" value={authName} onChange={e => setAuthName(e.target.value)} placeholder="e.g. Alex Johnson" required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Gmail Address</label>
-                    <input type="email" className="form-input" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="e.g. alex@gmail.com" required />
-                  </div>
-                  <button type="submit" className="btn-primary" style={{ justifyContent: 'center' }}>
-                    <CheckCircle size={18} /><span>Save Settings</span>
-                  </button>
-                </form>
-              </div>
-
-              <div className="glass-panel" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Shield size={18} color="#06b6d4" /> Region & Language
-                </h3>
-                <div className="form-group">
-                  <label className="form-label">News Country</label>
-                  <select className="form-input" style={{ background: 'rgba(9, 9, 14, 0.4)', color: 'white' }} value={user.country} onChange={e => { setUser({ ...user, country: e.target.value }); showToast("Country updated!"); }}>
-                    {supportedCountries.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Broadcast Language</label>
-                  <select className="form-input" style={{ background: 'rgba(9, 9, 14, 0.4)', color: 'white' }} value={user.language} onChange={e => { setUser({ ...user, language: e.target.value }); showToast("Language updated!"); }}>
-                    {supportedLanguages.map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
+            <div style={{ fontFamily: "'Merriweather',serif", fontSize: 20, fontWeight: 900, color: '#c8102e', marginBottom: 6 }}>LAANCE NEWS</div>
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: '#666' }}>AI-Powered · Voice of the World · Since 2026</div>
           </div>
-        )}
-      </main>
+          <div style={{ display: 'flex', gap: 24 }}>
+            {['UAE', 'World', 'Business', 'Tech', 'Life', 'Sports'].map(c => (
+              <span key={c} style={{ cursor: 'pointer' }} onClick={() => setActiveCategory(c)}>{c}</span>
+            ))}
+          </div>
+          <div>©2026 Laance Intelligence LLC. Powered by Rendervid · Supabase · Vercel · Cloudflare R2</div>
+        </div>
+      </div>
 
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px 48px', color: 'var(--text-dimmed)', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>&copy; 2026 Laance News App. All Rights Reserved.</div>
-        <span style={{ color: 'var(--text-muted)' }}>Powered by Rendervid · Supabase · Vercel · Cloudflare R2</span>
-      </footer>
-
-      {/* VIDEO MODAL — Real YouTube Embed Player */}
-      {videoModalArticle && (
-        <div className="modal-backdrop" onClick={() => setVideoModalArticle(null)}>
-          <div className="modal-container glass-panel" style={{ maxWidth: '780px' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title" style={{ fontSize: '18px' }}>
-                <Video size={20} color="#3b82f6" />
-                <span style={{ fontSize: '16px', maxWidth: '580px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {videoModalArticle.title}
-                </span>
-              </h2>
-              <button className="modal-close-btn" onClick={() => setVideoModalArticle(null)}>
-                <X size={18} />
+      {/* ARTICLE DETAIL MODAL */}
+      {activeArticle && (
+        <div className="kt-modal-backdrop" onClick={() => setActiveArticle(null)}>
+          <div className="kt-modal" onClick={e => e.stopPropagation()}>
+            <button className="kt-modal-close" onClick={() => setActiveArticle(null)}>✕</button>
+            <div className="kt-modal-cat">{activeArticle.cat} · <span className="kt-ai-badge">AI Reporter</span></div>
+            <div className="kt-modal-title">{activeArticle.title}</div>
+            <div className="kt-modal-byline">
+              <span>By Laance AI Reporter</span>
+              <span>·</span>
+              <span>{activeArticle.time}</span>
+            </div>
+            <img src={activeArticle.image} alt={activeArticle.title} />
+            <div className="kt-modal-body">
+              {activeArticle.content.split('\n\n').map((p, i) => <p key={i}>{p}</p>)}
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e2e2' }}>
+              <button className="kt-video-btn" onClick={() => { setVideoArticle(activeArticle); setActiveArticle(null); }}>
+                <Play size={14} fill="white" /> Watch AI Video
+              </button>
+              <button className="kt-share-btn" onClick={() => handleShare(activeArticle)}>
+                <Share2 size={14} /> Share Article
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* REAL YOUTUBE VIDEO EMBED — actually plays */}
-            <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', borderRadius: '12px', overflow: 'hidden', background: '#000' }}>
+      {/* VIDEO MODAL — Real YouTube embed */}
+      {videoArticle && (
+        <div className="kt-modal-backdrop" onClick={() => setVideoArticle(null)}>
+          <div className="kt-modal" style={{ maxWidth: 820, padding: 24 }} onClick={e => e.stopPropagation()}>
+            <button className="kt-modal-close" onClick={() => setVideoArticle(null)}>✕</button>
+            <div className="kt-modal-cat">{videoArticle.cat} · AI Video Broadcast</div>
+            <div className="kt-modal-title" style={{ fontSize: 20, marginBottom: 16 }}>{videoArticle.title}</div>
+            <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000', borderRadius: 4, overflow: 'hidden', marginBottom: 16 }}>
               <iframe
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                src={`https://www.youtube.com/embed/${videoModalArticle.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
-                title={videoModalArticle.title}
+                src={`https://www.youtube.com/embed/${videoArticle.youtubeId}?autoplay=1&rel=0`}
+                title={videoArticle.title}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-dimmed)', marginTop: '4px' }}>
-              <span>{videoModalArticle.favicon}</span>
-              <span style={{ color: '#4ade80' }}>{videoModalArticle.source}</span>
-              <span>·</span>
-              <span>{videoModalArticle.timeAgo}</span>
-              <span>·</span>
-              <span>{videoModalArticle.language}</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button className="btn-glass" onClick={() => setVideoModalArticle(null)}>Close</button>
-              <button className="btn-primary" onClick={() => handleShare(videoModalArticle)}>
-                <Share2 size={16} /><span>Share This Video</span>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="kt-share-btn" onClick={() => handleShare(videoArticle)}>
+                <Share2 size={14} /> Share Video
               </button>
             </div>
           </div>
@@ -477,5 +386,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
