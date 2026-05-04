@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Play, Share2, X, CheckCircle, RefreshCw, Zap } from 'lucide-react';
+import { supabase, insertArticle, logAiSearch } from './lib/supabase';
 
 const CATEGORIES = ['UAE', 'World', 'Business', 'Tech', 'Life', 'Sports', 'Entertainment'];
 
@@ -57,8 +58,25 @@ const TICKER_ITEMS = [
   'Iran nuclear talks resume — IRGC issues new warning',
 ];
 
+// Normalise a raw Supabase row to the shape the UI expects
+function rowToArticle(row) {
+  return {
+    id: row.id,
+    cat: row.cat,
+    title: row.title,
+    snippet: row.snippet || '',
+    content: row.content || row.snippet || '',
+    image: row.image || IMAGES[0],
+    time: row.time_label || 'Just Now',
+    isNew: row.is_new || false,
+    youtubeId: row.youtube_id || YOUTUBE_IDS[0],
+    source: row.source || 'AI Reporter',
+  };
+}
+
 export default function App() {
   const [articles, setArticles] = useState(INITIAL_ARTICLES);
+  const [dbReady, setDbReady] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
@@ -66,32 +84,96 @@ export default function App() {
   const [videoArticle, setVideoArticle] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [toast, setToast] = useState(null);
-  const [aiStatus, setAiStatus] = useState('AI Reporter live — scanning 40+ global sources');
+  const [aiStatus, setAiStatus] = useState('Connecting to Supabase backend...');
   const [newCount, setNewCount] = useState(0);
   const counterRef = useRef(0);
   const sharedRef = useRef({});
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  // ── AI AUTO-ADD NEWS EVERY 30s ────────────────────────
+  // ── LOAD ARTICLES FROM SUPABASE ON STARTUP ────────────
   useEffect(() => {
-    const interval = setInterval(() => {
+    async function loadArticles() {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(60);
+
+      if (error) {
+        // Supabase not configured yet — fall back to local seed data
+        setAiStatus('AI Reporter live (local mode — add Supabase keys to enable cloud backend)');
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setArticles(data.map(rowToArticle));
+        setDbReady(true);
+        setAiStatus(`AI Reporter live — ${data.length} articles loaded from Supabase`);
+      } else {
+        // DB is connected but empty — seed with initial articles
+        setDbReady(true);
+        setAiStatus('AI Reporter live — seeding Supabase with initial articles...');
+        for (let i = 0; i < INITIAL_ARTICLES.length; i++) {
+          const a = INITIAL_ARTICLES[i];
+          await insertArticle({
+            cat: a.cat, title: a.title, snippet: a.snippet,
+            content: a.content, image: a.image,
+            youtube_id: a.youtubeId, time_label: a.time, is_new: false,
+          });
+        }
+        setAiStatus('AI Reporter live — Supabase seeded ✓');
+      }
+    }
+    loadArticles();
+  }, []);
+
+  // ── SUPABASE REAL-TIME: new rows push to all users ────
+  useEffect(() => {
+    const channel = supabase
+      .channel('articles-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'articles' }, (payload) => {
+        const fresh = rowToArticle(payload.new);
+        setArticles(prev => [fresh, ...prev.slice(0, 59)]);
+        setNewCount(n => n + 1);
+        setAiStatus(`AI Reporter published: "${fresh.title.slice(0, 60)}..." — ${new Date().toLocaleTimeString()}`);
+        setTimeout(() => {
+          setArticles(prev => prev.map(a => a.id === fresh.id ? { ...a, isNew: false } : a));
+        }, 3000);
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, []);
+
+  // ── AI AUTO-PUBLISHER: saves to Supabase every 30s ───
+  useEffect(() => {
+    const interval = setInterval(async () => {
       counterRef.current += 1;
       const src = AI_HEADLINES[counterRef.current % AI_HEADLINES.length];
-      const freshArticle = makeArticle(
+      const article = makeArticle(
         { ...src, title: src.title + ' — AI Update #' + counterRef.current },
-        counterRef.current,
-        true
+        counterRef.current, true
       );
-      setArticles(prev => [freshArticle, ...prev.slice(0, 49)]);
-      setNewCount(n => n + 1);
-      setAiStatus(`AI Reporter published update #${counterRef.current} — ${new Date().toLocaleTimeString()}`);
-      setTimeout(() => {
-        setArticles(prev => prev.map(a => a.id === freshArticle.id ? { ...a, isNew: false } : a));
-      }, 3000);
+
+      if (dbReady) {
+        // Save to Supabase → real-time listener picks it up for all users
+        await insertArticle({
+          cat: article.cat, title: article.title, snippet: article.snippet,
+          content: article.content, image: article.image,
+          youtube_id: article.youtubeId, time_label: 'Just Now', is_new: true,
+        });
+      } else {
+        // Local fallback
+        setArticles(prev => [article, ...prev.slice(0, 49)]);
+        setNewCount(n => n + 1);
+        setAiStatus(`AI Reporter published update #${counterRef.current} — ${new Date().toLocaleTimeString()}`);
+        setTimeout(() => {
+          setArticles(prev => prev.map(a => a.id === article.id ? { ...a, isNew: false } : a));
+        }, 3000);
+      }
     }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [dbReady]);
 
   // ── SHARE LINK ────────────────────────────────────────
   const handleShare = (article, e) => {
@@ -140,8 +222,19 @@ export default function App() {
         youtubeId: YOUTUBE_IDS[i % YOUTUBE_IDS.length],
       }));
 
-      // Inject AI search articles into live feed too
-      setArticles(prev => [...freshArticles, ...prev].slice(0, 60));
+      // Log the search query to Supabase
+      if (dbReady) {
+        logAiSearch(query);
+        // Save each generated article to Supabase
+        freshArticles.forEach(a => insertArticle({
+          cat: a.cat, title: a.title, snippet: a.snippet,
+          content: a.content, image: a.image,
+          youtube_id: a.youtubeId, time_label: a.time, is_new: true,
+        }));
+      } else {
+        // Local fallback
+        setArticles(prev => [...freshArticles, ...prev].slice(0, 60));
+      }
       setSearchResults({ query, items: freshArticles });
       setIsSearching(false);
       setAiStatus(`AI Reporter generated ${freshArticles.length} fresh articles for "${query}"`);
