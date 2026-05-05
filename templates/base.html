@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Cart - Premium E-Commerce</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <i class="fa-solid fa-cart-shopping brand-icon"></i>
+                <span class="brand-text">Global Cart</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/safety" class="nav-link"><i class="fa-solid fa-shield-halved"></i> Safety</a>
+                <a href="/tools" class="nav-link"><i class="fa-solid fa-wrench"></i> Tools</a>
+            </div>
+            <div class="nav-actions">
+                <a href="#" class="btn-icon"><i class="fa-solid fa-magnifying-glass"></i></a>
+                <a href="#" class="btn-icon"><i class="fa-solid fa-user"></i></a>
+                <a href="#" class="btn-primary"><i class="fa-solid fa-bag-shopping"></i> Cart (0)</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <h3>Global Cart</h3>
+                <p>Premium e-commerce experiences delivered globally.</p>
+            </div>
+            <div class="footer-links">
+                <a href="/">Home</a>
+                <a href="/safety">Safety</a>
+                <a href="/tools">Tools</a>
+            </div>
+            <div class="footer-social">
+                <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                <a href="#"><i class="fa-brands fa-facebook"></i></a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 Global Cart. All rights reserved.
+        </div>
+    </footer>
+</body>
+</html>

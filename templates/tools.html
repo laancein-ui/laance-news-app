@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Seller Tools</h1>
+    <p>Powerful tools to grow your e-commerce business.</p>
+</div>
+
+<section class="tools-content">
+    <div class="tools-layout">
+        <div class="tools-sidebar">
+            <ul class="tool-menu">
+                <li class="active"><i class="fa-solid fa-chart-line"></i> Analytics Dashboard</li>
+                <li><i class="fa-solid fa-boxes-stacked"></i> Inventory Manager</li>
+                <li><i class="fa-solid fa-bullhorn"></i> Marketing Hub</li>
+                <li><i class="fa-solid fa-file-invoice-dollar"></i> Finance & Reports</li>
+            </ul>
+        </div>
+        <div class="tools-main">
+            <div class="tool-header">
+                <h2>Analytics Overview</h2>
+                <button class="btn-primary btn-small"><i class="fa-solid fa-download"></i> Export Report</button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Total Revenue</div>
+                    <div class="stat-value">$24,590</div>
+                    <div class="stat-change positive"><i class="fa-solid fa-arrow-up"></i> 12.5%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Active Orders</div>
+                    <div class="stat-value">142</div>
+                    <div class="stat-change positive"><i class="fa-solid fa-arrow-up"></i> 5.2%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Conversion Rate</div>
+                    <div class="stat-value">3.8%</div>
+                    <div class="stat-change negative"><i class="fa-solid fa-arrow-down"></i> 1.1%</div>
+                </div>
+            </div>
+
+            <div class="dashboard-placeholder">
+                <div class="chart-mockup">
+                    <div class="bar" style="height: 40%"></div>
+                    <div class="bar" style="height: 60%"></div>
+                    <div class="bar" style="height: 30%"></div>
+                    <div class="bar" style="height: 80%"></div>
+                    <div class="bar" style="height: 50%"></div>
+                    <div class="bar" style="height: 90%"></div>
+                    <div class="bar" style="height: 70%"></div>
+                </div>
+                <p>Interactive chart loading...</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

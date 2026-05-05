@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <span class="badge">New Collection</span>
+        <h1>Elevate Your Lifestyle with Premium Products</h1>
+        <p>Discover our curated collection of high-quality items designed to enhance your daily life. Shop with confidence on Global Cart.</p>
+        <div class="hero-buttons">
+            <a href="#" class="btn-primary btn-large">Shop Now</a>
+            <a href="/tools" class="btn-secondary btn-large">Explore Tools</a>
+        </div>
+    </div>
+    <div class="hero-image">
+        <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80" alt="Premium Shopping Experience">
+    </div>
+</section>
+
+<section class="featured-products">
+    <div class="section-header">
+        <h2>Featured Products</h2>
+        <p>Handpicked selections for you</p>
+    </div>
+    <div class="product-grid">
+        <!-- Product 1 -->
+        <div class="product-card">
+            <div class="product-image">
+                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80" alt="Premium Headphones">
+                <button class="add-to-cart"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="product-info">
+                <span class="category">Electronics</span>
+                <h3>Premium Wireless Headphones</h3>
+                <div class="price">$299.99</div>
+            </div>
+        </div>
+        <!-- Product 2 -->
+        <div class="product-card">
+            <div class="product-image">
+                <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80" alt="Smart Watch">
+                <button class="add-to-cart"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="product-info">
+                <span class="category">Wearables</span>
+                <h3>Elite Smart Watch Series 5</h3>
+                <div class="price">$199.99</div>
+            </div>
+        </div>
+        <!-- Product 3 -->
+        <div class="product-card">
+            <div class="product-image">
+                <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&q=80" alt="Camera">
+                <button class="add-to-cart"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="product-info">
+                <span class="category">Photography</span>
+                <h3>Pro Mirrorless Camera</h3>
+                <div class="price">$1299.99</div>
+            </div>
+        </div>
+        <!-- Product 4 -->
+        <div class="product-card">
+            <div class="product-image">
+                <img src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80" alt="Smart Speaker">
+                <button class="add-to-cart"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="product-info">
+                <span class="category">Smart Home</span>
+                <h3>Voice Assistant Speaker</h3>
+                <div class="price">$89.99</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="feature">
+        <i class="fa-solid fa-truck-fast feature-icon"></i>
+        <h3>Free Shipping</h3>
+        <p>On all orders over $100</p>
+    </div>
+    <div class="feature">
+        <i class="fa-solid fa-shield-check feature-icon"></i>
+        <h3>Secure Checkout</h3>
+        <p>100% protected payments</p>
+    </div>
+    <div class="feature">
+        <i class="fa-solid fa-rotate-left feature-icon"></i>
+        <h3>Easy Returns</h3>
+        <p>30-day money-back guarantee</p>
+    </div>
+</section>
+{% endblock %}
